@@ -1,6 +1,11 @@
-# Aticle：A 股上市公司介绍 → 微信公众号草稿箱
+# Aticle：多领域内容 → 微信公众号草稿箱
 
-每次手动执行：拉**当日** A 股列表 → 找未写过的公司 → 拉公开数据 → DeepSeek 写稿 → 进草稿箱。
+支持多个**内容领域**，各自推送到**不同公众号草稿箱**。当前内置两个领域：
+
+| 领域 ID | 说明 | 状态 |
+|---------|------|------|
+| `stock` | A 股上市公司介绍 | 已实现 |
+| `reserved` | 第二个公众号槽位 | 待配置内容 |
 
 ## 配置
 
@@ -10,43 +15,45 @@ source .venv/bin/activate
 cp .env.example .env   # 首次
 ```
 
-`.env` 必填：`DEEPSEEK_API_KEY`、`WECHAT_APP_ID`、`WECHAT_APP_SECRET`；可选 `DAILY_COMPANY_COUNT=1`。
+`.env` 必填：`DEEPSEEK_API_KEY`；`stock` 领域还需 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`。  
+第二个公众号在 `VERTICAL_RESERVED_WECHAT_APP_ID` / `VERTICAL_RESERVED_WECHAT_APP_SECRET` 中配置。
 
-公众平台 **基本配置** 里把本机 **公网 IP** 加入白名单。
+公众平台 **基本配置** 里把本机 **公网 IP** 加入白名单（每个公众号各自配置）。
 
-## 每次发文前
-
-```bash
-python -m aiticle check-wechat   # 先诊断出口 IP 与白名单
-python -m aiticle run
-```
-
-每次 `run` 会处理 **1 家公司**（可在 `.env` 里改 `DAILY_COMPANY_COUNT`）。
-
-## 进度
+## 常用命令
 
 ```bash
-python -m aiticle status
+python -m aiticle verticals              # 列出领域
+python -m aiticle check-wechat           # 测 stock 公众号连通（默认领域）
+python -m aiticle check-wechat -v reserved  # 测第二个公众号
+python -m aiticle run                    # stock 领域：跑 1 家公司
+python -m aiticle run -v stock --count 2
+python -m aiticle status --all           # 全部领域进度
 ```
 
 ## 其他命令
 
 ```bash
-python -m aiticle generate --code 600519   # 指定一家（会记入已写）
-python -m aiticle publish --code 600519    # 用本地文稿重发草稿
-python -m aiticle fetch --code 600519      # 调试拉数
+python -m aiticle generate --code 600519           # 指定一家 A 股
+python -m aiticle publish --code 600519            # 用本地文稿重发草稿
+python -m aiticle fetch --code 600519              # 调试拉数
+python -m aiticle reset-registry                   # 清空 stock 已写记录
 ```
+
+`reserved` 领域内容生成尚未实现，可先配置微信凭证并用 `check-wechat -v reserved` 验证。
 
 ## 数据文件
 
-| 文件 | 作用 |
-|---|---|
-| `data/written_registry.json` | 已写公司 + 失败记录（上云请备份此文件） |
-| `data/daily_runs.jsonl` | 每次运行日志 |
-| `output/<代码>/` | 本地文稿备份 |
+| 路径 | 作用 |
+|------|------|
+| `data/stock/written_registry.json` | stock 已写公司（兼容旧 `data/written_registry.json`） |
+| `data/stock/daily_runs.jsonl` | stock 运行日志 |
+| `output/stock/<代码>/` | stock 本地文稿 |
+| `data/reserved/` | 预留领域数据（待实现） |
+| `output/reserved/` | 预留领域输出（待实现） |
 
-新股上市：出现在当日列表且不在已写 → 自动写。退市：不在当日列表 → 不会被选。
+旧版 `output/<代码>/` 仍可用于 `publish --code`。
 
 ## 你每天只做
 
-微信公众平台 → **草稿箱** → 检查 1 篇 → 发布。
+对应公众号 → **草稿箱** → 检查文章 → 发布。

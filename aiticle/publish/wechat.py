@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 
-from aiticle.config import PLACEHOLDER_COVER, Settings
+from aiticle.config import PLACEHOLDER_COVER, Settings, VerticalConfig
 from aiticle.render import markdown_to_wechat_html
 from aiticle.title import fit_wechat_title
 
@@ -33,10 +33,11 @@ def _parse_wechat_ip(errmsg: str) -> str | None:
 
 
 class WeChatDraftPublisher:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-        if not settings.wechat_app_id or not settings.wechat_app_secret:
-            raise RuntimeError("未配置 WECHAT_APP_ID / WECHAT_APP_SECRET")
+    def __init__(self, credentials: Settings | VerticalConfig) -> None:
+        self.app_id = credentials.wechat_app_id
+        self.app_secret = credentials.wechat_app_secret
+        if not self.app_id or not self.app_secret:
+            raise RuntimeError("未配置微信公众号 AppID / AppSecret")
 
     def verify_connection(self) -> str:
         """校验凭证与 IP 白名单，成功返回 access_token。"""
@@ -67,8 +68,8 @@ class WeChatDraftPublisher:
         url = "https://api.weixin.qq.com/cgi-bin/token"
         params = {
             "grant_type": "client_credential",
-            "appid": self.settings.wechat_app_id,
-            "secret": self.settings.wechat_app_secret,
+            "appid": self.app_id,
+            "secret": self.app_secret,
         }
         with self._http_client() as client:
             data = client.get(url, params=params).json()
@@ -82,7 +83,7 @@ class WeChatDraftPublisher:
                     _whitelist_help(
                         wechat_ip=wechat_ip,
                         local_ip=local_ip,
-                        app_id=self.settings.wechat_app_id,
+                        app_id=self.app_id,
                         raw=errmsg,
                     )
                 )
@@ -90,7 +91,7 @@ class WeChatDraftPublisher:
                 raise RuntimeError(
                     "AppSecret 无效（40125）。请到 mp.weixin.qq.com → 设置与开发 → 基本配置 "
                     "→ 开发者密码(AppSecret) 重置，将新 Secret 写入 .env 的 WECHAT_APP_SECRET。"
-                    f" 当前 AppID：{self.settings.wechat_app_id}"
+                    f" 当前 AppID：{self.app_id}"
                 )
             raise RuntimeError(f"获取微信 access_token 失败: {data}")
         return data["access_token"]

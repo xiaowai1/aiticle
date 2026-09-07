@@ -3,13 +3,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from aiticle.config import OUTPUT_DIR
 from aiticle.models import CompanySnapshot, WechatArticle
 from aiticle.render import markdown_to_wechat_html
 
 
-def export_wechat(snapshot: CompanySnapshot, article: WechatArticle) -> Path:
-    out = OUTPUT_DIR / snapshot.code
+def export_wechat(
+    snapshot: CompanySnapshot,
+    article: WechatArticle,
+    output_base: Path,
+) -> Path:
+    out = output_base / snapshot.code
     out.mkdir(parents=True, exist_ok=True)
     (out / "snapshot.json").write_text(
         json.dumps(snapshot.model_dump(), ensure_ascii=False, indent=2),
